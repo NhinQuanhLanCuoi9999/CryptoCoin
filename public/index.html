@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Crypto Miner</title>
+  <!-- Bootstrap CSS CDN -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    body {
+      padding-top: 60px;
+    }
+    .progress-bar {
+      transition: width 1s linear;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <a class="navbar-brand" href="#">Crypto Miner</a>
+    <!-- Phần hiển thị Level: ban đầu ẩn, sẽ được show khi có dữ liệu -->
+    <span class="nav-link" id="nav-level" style="display: none; background: linear-gradient(90deg, red, orange, yellow, green, cyan, blue, violet); -webkit-background-clip: text; color: transparent;">Level: <span id="levelDisplay"></span>
+    </span>
+    <div class="collapse navbar-collapse">
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item" id="nav-logout" style="display: none;">
+          <a class="nav-link" href="#" id="logoutBtn">Logout</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Container chính -->
+  <div class="container mt-4">
+    <!-- Phần đăng nhập / đăng ký -->
+    <div id="authSection">
+      <ul class="nav nav-tabs" id="authTab" role="tablist">
+        <li class="nav-item">
+          <a class="nav-link active" id="login-tab" data-toggle="tab" href="#loginForm" role="tab" aria-controls="login" aria-selected="true">Login</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" id="register-tab" data-toggle="tab" href="#registerForm" role="tab" aria-controls="register" aria-selected="false">Register</a>
+        </li>
+      </ul>
+      <div class="tab-content">
+        <!-- Form đăng nhập -->
+        <div class="tab-pane fade show active" id="loginForm" role="tabpanel" aria-labelledby="login-tab">
+          <form id="loginFormElement" class="mt-3">
+            <div class="form-group">
+              <label for="loginUsername">Username</label>
+              <input type="text" class="form-control" id="loginUsername" placeholder="Enter username" required>
+            </div>
+            <div class="form-group">
+              <label for="loginPassword">Password</label>
+              <input type="password" class="form-control" id="loginPassword" placeholder="Password" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Login</button>
+          </form>
+        </div>
+        <!-- Form đăng ký -->
+        <div class="tab-pane fade" id="registerForm" role="tabpanel" aria-labelledby="register-tab">
+          <form id="registerFormElement" class="mt-3">
+            <div class="form-group">
+              <label for="registerUsername">Username</label>
+              <input type="text" class="form-control" id="registerUsername" placeholder="Enter username" required>
+            </div>
+            <div class="form-group">
+              <label for="registerPassword">Password</label>
+              <input type="password" class="form-control" id="registerPassword" placeholder="Password" required minlength="6">
+            </div>
+            <div class="form-group">
+              <label for="registerConfirmPassword">Confirm Password</label>
+              <input type="password" class="form-control" id="registerConfirmPassword" placeholder="Confirm Password" required minlength="6">
+              <small id="passwordError" class="text-danger" style="display: none;">Passwords do not match!</small>
+            </div>
+            <button type="submit" class="btn btn-success">Register</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phần Dashboard (hiển thị sau khi đăng nhập) -->
+    <div id="dashboardSection" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          Dashboard
+        </div>
+        <div class="card-body">
+          <h5 class="card-title display-4">Balance: <span id="balanceDisplay" class="fs-1">0.00000000</span> ⟁</h5>
+          <p class="card-text">Mining Status: <span id="miningStatus">Not Mining</span></p>
+          <p class="card-text">Time Remaining: <span id="timeRemaining">0</span></p>
+          <p class="card-text">Mining Speed: <span id="miningSpeed">0.00000000</span> coin/s</p>
+          <p class="card-text">EXP: <span id="expDisplay">0</span></p>
+          <p class="card-text" style="font-weight: bold; background-image: linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet); -webkit-background-clip: text; color: transparent;">Bonus Money: X <span id="bonusExpDisplay">0</span></p>
+          <button id="mineBtn" class="btn btn-warning">⚡ Start Mining</button>
+          <div class="progress mt-3">
+            <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- jQuery và Bootstrap JS (bao gồm Popper.js) -->
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <!-- Script tùy chỉnh -->
+  <script src="script.js"></script>
+</body>
+</html>
