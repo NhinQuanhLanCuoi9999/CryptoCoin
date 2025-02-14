@@ -23,13 +23,6 @@ $(document).ready(function(){
     }
   }
 
-  $(document).ready(function () {
-    updateStatus(); // Gọi ngay khi trang load
-  
-    // Cập nhật trạng thái sau mỗi 5 giây
-    setInterval(updateStatus, 5000);
-  });
-  
   function updateStatus() {
     $.ajax({
       url: "/status",
@@ -39,16 +32,16 @@ $(document).ready(function(){
         if (data.mining) {
           $("#miningStatus").text("Mining");
   
-          // Lấy tổng thời gian phiên và thời gian còn lại từ dữ liệu server
-          let totalMs = data.sessionDurationMs; // Tổng thời gian của phiên (ví dụ: 24h)
-          let timeRemaining = data.timeRemainingMs; // Thời gian còn lại (cập nhật từ backend)
+          // Lấy tổng thời gian phiên và thời gian còn lại từ dữ liệu server (đều được tính động)
+          let totalMs = data.sessionDurationMs; // Ví dụ: 24 * 60 * 60 * 1000 (24 giờ)
+          let timeRemaining = data.timeRemainingMs; // Thời gian còn lại được tính ở backend
   
           // Tính giờ, phút, giây từ timeRemaining
           let seconds = Math.floor((timeRemaining / 1000) % 60);
           let minutes = Math.floor((timeRemaining / (1000 * 60)) % 60);
           let hours = Math.floor(timeRemaining / (1000 * 60 * 60));
   
-          // Hiển thị thời gian còn lại dưới dạng "Xh Ym Zs"
+          // Hiển thị thời gian dưới dạng "Xh Ym Zs"
           $("#timeRemaining").text(`${hours}h ${minutes}m ${seconds}s`);
           $("#mineBtn").prop("disabled", true);
   
