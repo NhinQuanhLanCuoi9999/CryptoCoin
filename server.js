@@ -15,6 +15,7 @@ app.use(session({
   saveUninitialized: false,
 }));
 
+
 // Cho phép phục vụ file tĩnh (frontend) từ thư mục public
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -176,7 +177,8 @@ function calculateLevel(exp) {
 
 app.post('/mine', isAuthenticated, async (req, res) => {
   const username = req.session.username;
-  const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 giờ
+  const SESSION_DURATION = 2 * 60 * 1000; // 2 phút
+
 
   try {
     // Lấy thông tin user từ DB
@@ -248,9 +250,23 @@ app.post('/mine', isAuthenticated, async (req, res) => {
             [earnedAmount, earnedAmount, username]
           );
 
+          function getFormattedTime() {
+            let now = new Date();
+            let day = String(now.getDate()).padStart(2, "0");
+            let month = String(now.getMonth() + 1).padStart(2, "0"); // Tháng bắt đầu từ 0
+            let year = now.getFullYear();
+            let hours = String(now.getHours()).padStart(2, "0");
+            let minutes = String(now.getMinutes()).padStart(2, "0");
+            let seconds = String(now.getSeconds()).padStart(2, "0");
+          
+            return `${day}/${month}/${year} | ${hours}:${minutes}:${seconds}`;
+          }
+          
+          // Sử dụng trong console.log
           console.log(
-            `[DEBUG] ${username} đã đào được: ${earnedAmount} ⟁ (exp hiện tại: ${currentExp}, bonus (50% exp): ${bonusExp}, fixedAmount: ${fixedAmountFromDB})`
+            `[DEBUG] [${getFormattedTime()}] ${username} đã đào được: ${earnedAmount} ⟁ (exp hiện tại: ${currentExp}, bonus (50% exp): ${bonusExp}, fixedAmount: ${fixedAmountFromDB})`
           );
+          
         }
 
         // --- Cập nhật Level nếu cần ---
@@ -322,12 +338,15 @@ app.get('/bonus', isAuthenticated, async (req, res) => {
   }
 });
 
+const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 giờ
+
+
+
 // -----------------------
 // Endpoint lấy trạng thái mining (bao gồm balance, thời gian, fixedAmount)
 // -----------------------
 app.get('/status', isAuthenticated, async (req, res) => {
-  const username = req.session.username;
-  const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 giờ
+  const username = req.session.username; // Fix: Thêm username
 
   try {
     const [rows] = await pool.execute(
@@ -345,13 +364,10 @@ app.get('/status', isAuthenticated, async (req, res) => {
     let sessionDurationMs = SESSION_DURATION;
     let fixedAmount = user.mining_fixed_amount || 0;
 
-
     if (user.mining_active && user.mining_start_time) {
       const startTime = parseInt(user.mining_start_time); // Chắc chắn startTime là số
       const elapsed = Date.now() - startTime;
       timeRemainingMs = Math.max(SESSION_DURATION - elapsed, 0);
-
-    
     }
 
     res.json({
@@ -367,7 +383,6 @@ app.get('/status', isAuthenticated, async (req, res) => {
     res.status(500).json({ message: 'Lỗi server' });
   }
 });
-
 
 // -----------------------
 // Endpoint lấy thông tin số EXP của user
@@ -411,61 +426,6 @@ app.get('/level', isAuthenticated, async (req, res) => {
   }
 });
 
-// Endpoint lấy thông tin số exp đã kiếm được
-app.get('/exp', isAuthenticated, async (req, res) => {
-  const username = req.session.username;
-
-  try {
-    const [rows] = await pool.execute('SELECT exp FROM users WHERE username = ?', [username]);
-    if (rows.length === 0) {
-      return res.status(400).json({ message: 'Người dùng không tồn tại' });
-    }
-
-    const user = rows[0];
-    res.json({ exp: user.exp });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Lỗi server' });
-  }
-});
-
-app.get('/status', isAuthenticated, async (req, res) => {
-  const username = req.session.username;
-  const SESSION_DURATION = 5 * 60 * 1000; // 5 phút
-
-  try {
-    const [rows] = await pool.execute(
-      'SELECT balance, mining_active, mining_start_time, mining_fixed_amount FROM users WHERE username = ?',
-      [username]
-    );
-    if (rows.length === 0) {
-      return res.status(400).json({ message: 'Người dùng không tồn tại' });
-    }
-    const user = rows[0];
-    let timeRemainingMs = 0;
-    let sessionDurationMs = 0;
-    let fixedAmount = user.mining_fixed_amount || 0;
-
-    if (user.mining_active && user.mining_start_time) {
-      const startTime = user.mining_start_time;
-      const elapsed = Date.now() - startTime;
-      timeRemainingMs = Math.max(SESSION_DURATION - elapsed, 0);
-      sessionDurationMs = SESSION_DURATION;
-    }
-
-    res.json({
-      balance: user.balance,
-      mining: Boolean(user.mining_active),
-      timeRemainingMs: timeRemainingMs,
-      sessionDurationMs: sessionDurationMs,
-      fixedAmount: fixedAmount,
-      miningSpeedPerSecond: parseFloat((fixedAmount / 30).toFixed(8))
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Lỗi server' });
-  }
-});
 
 // -----------------------
 // Endpoint xem số dư
