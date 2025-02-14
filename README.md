@@ -6,7 +6,6 @@
 
 - **Đăng ký & Đăng nhập**: Xác thực người dùng với mật khẩu đã được mã hóa bằng `bcrypt`.
 - **Quản lý phiên**: Sử dụng `express-session` để quản lý phiên đăng nhập.
-- **Chặn bot**: Middleware kiểm tra các header và User-Agent để chặn các bot phổ biến và các request đáng ngờ.
 - **Phiên Đào Coin**:
   - Người dùng có thể bắt đầu phiên đào coin kéo dài 1 ngày / 1 lần.
   - Mỗi phiên được gán một giá trị cố định (fixedAmount) được tạo ngẫu nhiên.
