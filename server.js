@@ -6,6 +6,7 @@ const path = require('path');
 const bcrypt = require('bcrypt');
 const xss = require('xss');
 const app = express();
+const SESSION_DURATION = 2 * 60 * 1000; // 2 phút
 
 // Cấu hình middleware
 app.use(bodyParser.json());
@@ -97,6 +98,24 @@ app.post('/register', async (req, res) => {
   }
 });
 
+
+// -----------------------
+// Endpoint bảng xếp hạng
+// -----------------------
+app.get('/leaderboard', async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      'SELECT username, balance, level FROM users WHERE balance > 0 ORDER BY balance DESC LIMIT 50'
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+});
+
+
+
 // -----------------------
 // Endpoint đăng nhập
 // -----------------------
@@ -172,12 +191,8 @@ function calculateLevel(exp) {
 // -----------------------
 // Endpoint bắt đầu phiên đào (nhấn nút ⚡)
 // -----------------------
-
-
-
 app.post('/mine', isAuthenticated, async (req, res) => {
   const username = req.session.username;
-  const SESSION_DURATION = 2 * 60 * 1000; // 2 phút
 
 
   try {
@@ -283,7 +298,7 @@ app.post('/mine', isAuthenticated, async (req, res) => {
       } catch (err) {
         console.error('Lỗi trong mining interval:', err);
       }
-    }, 3600000);
+    }, 1000);
     // Trả về thông tin phiên đào cho client
     res.json({
       message: 'Bắt đầu đào coin',
@@ -338,7 +353,6 @@ app.get('/bonus', isAuthenticated, async (req, res) => {
   }
 });
 
-const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 giờ
 
 
 

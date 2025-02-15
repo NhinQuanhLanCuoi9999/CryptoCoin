@@ -239,3 +239,52 @@ function updateExpAndLevel() {
     });
   });
 });
+$(document).ready(function() {
+  // Khi nhấn nút "Leaderboard" trên Dashboard
+  $('#showLeaderboardBtn').click(function() {
+    // Hiệu ứng chuyển đổi: thêm blur, delay 300ms, fadeOut, sau đó fadeIn Leaderboard
+    $('#dashboardSection').addClass('blur')
+      .delay(300)
+      .fadeOut(300, function() {
+        $(this).removeClass('blur');
+        $('#leaderboardSection').addClass('blur').fadeIn(300, function() {
+          $(this).removeClass('blur');
+        });
+      });
+    
+    // Lấy dữ liệu từ endpoint /leaderboard
+    $.ajax({
+      url: '/leaderboard',
+      method: 'GET',
+      dataType: 'json',
+      success: function(data) {
+        $('#leaderboardTableBody').empty();
+        $.each(data, function(index, entry) {
+          var rank = index + 1;
+          var row = '<tr>' +
+            '<td>' + rank + '</td>' +
+            '<td>' + entry.username + '</td>' +
+            '<td>' + entry.balance + '</td>' +
+            '<td>' + entry.level + '</td>' +
+            '</tr>';
+          $('#leaderboardTableBody').append(row);
+        });
+      },
+      error: function(xhr, status, error) {
+        console.error("Error fetching leaderboard data:", error);
+      }
+    });
+  });
+
+  // Khi nhấn nút "Back" trên bảng Leaderboard
+  $('#backToDashboard').click(function() {
+    $('#leaderboardSection').addClass('blur')
+      .delay(300)
+      .fadeOut(300, function() {
+        $(this).removeClass('blur');
+        $('#dashboardSection').addClass('blur').fadeIn(300, function() {
+          $(this).removeClass('blur');
+        });
+      });
+  });
+});

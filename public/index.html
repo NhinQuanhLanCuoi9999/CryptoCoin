@@ -13,6 +13,11 @@
     .progress-bar {
       transition: width 1s linear;
     }
+    /* CSS hiệu ứng blur */
+    .blur {
+      filter: blur(5px);
+      transition: filter 0.3s ease;
+    }
   </style>
 </head>
 <body>
@@ -20,7 +25,8 @@
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
     <a class="navbar-brand" href="#">Crypto Miner</a>
     <!-- Phần hiển thị Level: ban đầu ẩn, sẽ được show khi có dữ liệu -->
-    <span class="nav-link" id="nav-level" style="display: none; background: linear-gradient(90deg, red, orange, yellow, green, cyan, blue, violet); -webkit-background-clip: text; color: transparent;">Level: <span id="levelDisplay"></span>
+    <span class="nav-link" id="nav-level" style="display: none; background: linear-gradient(90deg, red, orange, yellow, green, cyan, blue, violet); -webkit-background-clip: text; color: transparent;">
+      Level: <span id="levelDisplay"></span>
     </span>
     <div class="collapse navbar-collapse">
       <ul class="navbar-nav ml-auto">
@@ -85,6 +91,8 @@
       <div class="card">
         <div class="card-header">
           Dashboard
+          <!-- Nút hiển thị Leaderboard -->
+          <button id="showLeaderboardBtn" class="btn btn-info btn-sm float-right">Leaderboard</button>
         </div>
         <div class="card-body">
           <h5 class="card-title display-4">Balance: <span id="balanceDisplay" class="fs-1">0.00000000</span> ⟁</h5>
@@ -92,11 +100,39 @@
           <p class="card-text">Time Remaining: <span id="timeRemaining">0</span></p>
           <p class="card-text">Mining Speed: <span id="miningSpeed">0.00000000</span> coin/s</p>
           <p class="card-text">EXP: <span id="expDisplay">0</span></p>
-          <p class="card-text" style="font-weight: bold; background-image: linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet); -webkit-background-clip: text; color: transparent;">Bonus Money: X <span id="bonusExpDisplay">0</span></p>
+          <p class="card-text" style="font-weight: bold; background-image: linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet); -webkit-background-clip: text; color: transparent;">
+            Bonus Money: X <span id="bonusExpDisplay">0</span>
+          </p>
           <button id="mineBtn" class="btn btn-warning">⚡ Start Mining</button>
           <div class="progress mt-3">
             <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phần Leaderboard (ẩn mặc định) -->
+    <div id="leaderboardSection" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          Leaderboard
+          <!-- Nút quay lại Dashboard -->
+          <button id="backToDashboard" class="btn btn-secondary btn-sm float-right">Back</button>
+        </div>
+        <div class="card-body">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Username</th>
+                <th>Balance</th>
+                <th>Level</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardTableBody">
+              <!-- Dữ liệu được load động -->
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -108,5 +144,19 @@
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
   <!-- Script tùy chỉnh -->
   <script src="script.js"></script>
+  <script>
+    // Khi DOM đã sẵn sàng
+    $(document).ready(function(){
+      // Lắng nghe sự kiện click vào cả hai tab
+      $('#login-tab, #register-tab').on('click', function(){
+        // Thêm class 'blur' để áp dụng hiệu ứng
+        $('#authSection').addClass('blur');
+        // Sau 300ms, loại bỏ class 'blur' để hoàn tất hiệu ứng
+        setTimeout(function(){
+          $('#authSection').removeClass('blur');
+        }, 300);
+      });
+    });
+    </script>
 </body>
 </html>
