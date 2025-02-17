@@ -1,6 +1,6 @@
 ## Pyramid Coin
 
-Phiên bản này giới thiệu một mô phỏng khai thác tiền điện tử đầy đủ chức năng với:
+Đây là một ứng dụng mô phỏng khai thác tiền điện tử đầy đủ chức năng với:
 
 *   Xác thực người dùng
 *   Bảng xếp hạng động
