@@ -6,7 +6,10 @@ const path = require('path');
 const bcrypt = require('bcrypt');
 const xss = require('xss');
 const app = express();
-const SESSION_DURATION = 2 * 60 * 1000; // 2 phút
+const fs = require('fs');
+const SESSION_DURATION = 24 * 60 * 60 * 1000;
+const miningTimers = {};
+
 
 // Cấu hình middleware
 app.use(bodyParser.json());
@@ -17,10 +20,10 @@ app.use(session({
 }));
 
 
-// Cho phép phục vụ file tĩnh (frontend) từ thư mục public
+// Cho phép phục vụ frontend từ thư mục public
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Tạo connection pool đến MySQL
+// Kết nối csdl
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
@@ -31,24 +34,18 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Global object để lưu trữ các timer phiên đào của người dùng (key theo username)
-const miningTimers = {};
 
 // -----------------------
 // Reset trạng thái đào
 // -----------------------
-// Hàm để reset toàn bộ mining_active về 0 khi server khởi động
 async function resetMiningActive() {
   try {
-    // Cập nhật tất cả các bản ghi có mining_active = 1 thành 0
     await pool.execute('UPDATE users SET mining_active = 0 WHERE mining_active = 1');
     console.log('[INFO] Đã reset tất cả các phiên đào còn lại.');
   } catch (err) {
     console.error('[ERROR] Lỗi khi reset mining_active:', err);
   }
 }
-
-// Gọi hàm reset ngay khi server bắt đầu chạy
 resetMiningActive();
 
 
@@ -64,10 +61,10 @@ app.post('/register', async (req, res) => {
     return res.status(400).json({ message: 'Yêu cầu username và password' });
   }
 
-  // Lấy địa chỉ IP của client
+  // Lấy IP của người dùng
   let clientIp = req.ip;
 
-  // Nếu có proxy, sử dụng địa chỉ IP từ header 'X-Forwarded-For'
+  // Lấy proxy
   if (req.headers['x-forwarded-for']) {
     clientIp = req.headers['x-forwarded-for'].split(',')[0].trim();
   }
@@ -126,7 +123,7 @@ app.post('/login', async (req, res) => {
   // Lấy địa chỉ IP của client
   let clientIp = req.ip;
 
-  // Nếu có proxy, sử dụng địa chỉ IP từ header 'X-Forwarded-For'
+  // Check proxy
   if (req.headers['x-forwarded-for']) {
     clientIp = req.headers['x-forwarded-for'].split(',')[0];
   }
@@ -145,7 +142,6 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Thông tin đăng nhập không hợp lệ' });
     }
     
-    // Cập nhật cột ip khi đăng nhập
     await pool.execute('UPDATE users SET ip = ? WHERE username = ?', [clientIp, username]);
 
     req.session.username = username;
@@ -248,7 +244,7 @@ app.post('/mine', isAuthenticated, async (req, res) => {
           console.log(`Phiên đào của ${username} đã kết thúc sau ${SESSION_DURATION / 60000} phút.`);
           return;
         }
-
+        
         // --- Cập nhật Bonus, Balance và EXP ---
         const [userRows] = await pool.execute(
           'SELECT exp, mining_fixed_amount FROM users WHERE username = ?',
@@ -259,12 +255,12 @@ app.post('/mine', isAuthenticated, async (req, res) => {
           const fixedAmountFromDB = parseFloat(userRows[0].mining_fixed_amount);
           const bonusExp = currentExp * 0.5;
           const earnedAmount = fixedAmountFromDB * bonusExp;
-
+        
           await pool.execute(
             'UPDATE users SET balance = balance + ?, exp = exp + ? WHERE username = ?',
             [earnedAmount, earnedAmount, username]
           );
-
+        
           function getFormattedTime() {
             let now = new Date();
             let day = String(now.getDate()).padStart(2, "0");
@@ -273,18 +269,34 @@ app.post('/mine', isAuthenticated, async (req, res) => {
             let hours = String(now.getHours()).padStart(2, "0");
             let minutes = String(now.getMinutes()).padStart(2, "0");
             let seconds = String(now.getSeconds()).padStart(2, "0");
-          
+        
             return `${day}/${month}/${year} | ${hours}:${minutes}:${seconds}`;
           }
-          
-          // Sử dụng trong console.log
-          console.log(
-            `[DEBUG] [${getFormattedTime()}] ${username} đã đào được: ${earnedAmount} ⟁ (exp hiện tại: ${currentExp}, bonus (50% exp): ${bonusExp}, fixedAmount: ${fixedAmountFromDB})`
-          );
+        
+          const logMessage = `[LOGS] [${getFormattedTime()}] ${username} đã đào được: ${earnedAmount} ⟁ (exp hiện tại: ${currentExp}, bonus (50% exp): ${bonusExp}, fixedAmount: ${fixedAmountFromDB})`;
+        
+          // In ra console
+          console.log(logMessage);
+        
+          // Ghi vào file logs.txt (tạo thư mục nếu chưa có)
+          const logDir = path.join(__dirname, 'logs');
+          const logFile = path.join(logDir, 'logs.txt');
+        
+          // Kiểm tra và tạo thư mục nếu chưa có
+          if (!fs.existsSync(logDir)) {
+            fs.mkdirSync(logDir, { recursive: true });
+          }
+        
+          // Ghi log vào file
+          fs.appendFile(logFile, logMessage + '\n', (err) => {
+            if (err) {
+              console.error('Lỗi khi ghi vào file:', err);
+            }
+          });
           
         }
 
-        // --- Cập nhật Level nếu cần ---
+        // --- Cập nhật Level ---
         const [result] = await pool.execute('SELECT exp, level FROM users WHERE username = ?', [username]);
         if (result.length > 0) {
           const newExp = parseFloat(result[0].exp);
@@ -298,7 +310,7 @@ app.post('/mine', isAuthenticated, async (req, res) => {
       } catch (err) {
         console.error('Lỗi trong mining interval:', err);
       }
-    }, 1000);
+    }, 3600000);
     // Trả về thông tin phiên đào cho client
     res.json({
       message: 'Bắt đầu đào coin',
