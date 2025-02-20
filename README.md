@@ -4,6 +4,7 @@
 
 *   Xác thực người dùng
 *   Bảng xếp hạng động
+*   Chuyển khoản
 *   Trải nghiệm người dùng hấp dẫn
 
 ### Các Tính năng Chính
