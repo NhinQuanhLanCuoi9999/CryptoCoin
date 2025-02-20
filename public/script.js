@@ -1,5 +1,6 @@
 $(document).ready(function(){
   let statusInterval;
+  let previousBalance = null; // Lưu số dư cũ để so sánh
 
   // Hàm hiển thị Dashboard
   function showDashboard() {
@@ -23,32 +24,68 @@ $(document).ready(function(){
     }
   }
 
+  // Mở modal chuyển tiền khi click nút "Chuyển tiền"
+  document.getElementById('transferBtn').addEventListener('click', function() {
+    $('#transferModal').modal('show');
+  });
+
+  // Xử lý sự kiện gửi form chuyển tiền (dành cho người gửi)
+  document.getElementById('transferForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const receiverId = document.getElementById('receiverId').value;
+    const amount = document.getElementById('transferAmount').value;
+
+    $.ajax({
+      url: '/transfer',
+      method: 'POST',
+      data: JSON.stringify({ receiverId, amount }),
+      contentType: "application/json",
+      success: function(response) {
+        alert(
+          `Chuyển tiền thành công!\nSố tiền nhận được: ${response.transferAmount} ⟁\nPhí: ${response.fee} ⟁ (${response.feePercentage})`
+        );
+        // Cập nhật số dư mới trong dashboard của người gửi
+        document.getElementById('balanceDisplay').textContent = response.newBalanceSender;
+        $('#transferModal').modal('hide');
+      },
+      error: function(xhr) {
+        const errMsg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Lỗi hệ thống';
+        alert('Chuyển tiền thất bại: ' + errMsg);
+      }
+    });
+  });
+
+  // Hàm cập nhật trạng thái (balance, mining, ...)
   function updateStatus() {
     $.ajax({
       url: "/status",
       method: "GET",
       success: function (data) {
         $("#balanceDisplay").text(data.balance);
+        let currentBalance = parseFloat(data.balance);
+        // Cập nhật số dư cũ để so sánh lần sau
+        previousBalance = currentBalance;
+        
         if (data.mining) {
           $("#miningStatus").text("Mining");
-  
-          // Lấy tổng thời gian phiên và thời gian còn lại từ dữ liệu server (đều được tính động)
-          let totalMs = data.sessionDurationMs; // Ví dụ: 24 * 60 * 60 * 1000 (24 giờ)
-          let timeRemaining = data.timeRemainingMs; // Thời gian còn lại được tính ở backend
-  
+
+          // Lấy tổng thời gian phiên và thời gian còn lại từ dữ liệu server
+          let totalMs = data.sessionDurationMs;
+          let timeRemaining = data.timeRemainingMs;
+
           // Tính giờ, phút, giây từ timeRemaining
           let seconds = Math.floor((timeRemaining / 1000) % 60);
           let minutes = Math.floor((timeRemaining / (1000 * 60)) % 60);
           let hours = Math.floor(timeRemaining / (1000 * 60 * 60));
-  
+
           // Hiển thị thời gian dưới dạng "Xh Ym Zs"
           $("#timeRemaining").text(`${hours}h ${minutes}m ${seconds}s`);
           $("#mineBtn").prop("disabled", true);
-  
+
           // Tính phần trăm đã hoàn thành của phiên đào
           let percentage = ((totalMs - timeRemaining) / totalMs) * 100;
           updateProgressBar(percentage);
-  
+
           $("#fixedAmountDisplay").text(formatNumber(data.fixedAmount));
           $("#miningSpeed").text(formatNumber(data.miningSpeedPerSecond));
         } else {
@@ -65,7 +102,6 @@ $(document).ready(function(){
       }
     });
   }
-  
 
   // Hàm cập nhật progress bar
   function updateProgressBar(percentage) {
@@ -174,51 +210,49 @@ $(document).ready(function(){
   });
 
   // Hàm cập nhật EXP, Level và Bonus Exp từ server
-function updateExpAndLevel() {
-  $.ajax({
-    url: "/exp",
-    method: "GET",
-    success: function(data) {
-      $("#expDisplay").text(formatNumber(data.exp));
-      $.ajax({
-        url: "/level",
-        method: "GET",
-        success: function(levelData) {
-          console.log("Level data:", levelData);
-          $("#levelDisplay").text(levelData.level);
-          $("#nav-level").show();
-        },
-        error: function(err) {
-          console.error("Lỗi khi lấy Level:", err);
-          $("#levelDisplay").text("N/A");
-          $("#nav-level").show();
-        }
-      });
-      
-      // Gọi API /bonus để lấy thông tin bonusExp
-      $.ajax({
-        url: "/bonus",
-        method: "GET",
-        success: function(bonusData) {
-          console.log("Bonus data:", bonusData);
-          // Hiển thị thông tin bonusExp
-          $("#bonusExpDisplay").text(formatNumber(bonusData.bonusExp)); // Hiển thị bonusExp
-          $("#nav-bonus").show(); // Nếu có phần hiển thị bonus thì cho nó xuất hiện
-        },
-        error: function(err) {
-          console.error("Lỗi khi lấy Bonus:", err);
-          $("#bonusExpDisplay").text("Bạn chưa đào.");
-          $("#nav-bonus").show();
-        }
-      });
+  function updateExpAndLevel() {
+    $.ajax({
+      url: "/exp",
+      method: "GET",
+      success: function(data) {
+        $("#expDisplay").text(formatNumber(data.exp));
+        $.ajax({
+          url: "/level",
+          method: "GET",
+          success: function(levelData) {
+            console.log("Level data:", levelData);
+            $("#levelDisplay").text(levelData.level);
+            $("#nav-level").show();
+          },
+          error: function(err) {
+            console.error("Lỗi khi lấy Level:", err);
+            $("#levelDisplay").text("N/A");
+            $("#nav-level").show();
+          }
+        });
+        
+        // Gọi API /bonus để lấy thông tin bonusExp
+        $.ajax({
+          url: "/bonus",
+          method: "GET",
+          success: function(bonusData) {
+            console.log("Bonus data:", bonusData);
+            $("#bonusExpDisplay").text(formatNumber(bonusData.bonusExp));
+            $("#nav-bonus").show();
+          },
+          error: function(err) {
+            console.error("Lỗi khi lấy Bonus:", err);
+            $("#bonusExpDisplay").text("Bạn chưa đào.");
+            $("#nav-bonus").show();
+          }
+        });
 
-    },
-    error: function(err) {
-      console.error("Lỗi khi lấy EXP:", err);
-    }
-  });
-}
-
+      },
+      error: function(err) {
+        console.error("Lỗi khi lấy EXP:", err);
+      }
+    });
+  }
 
   // Cập nhật EXP và Level mỗi 10 giây
   setInterval(updateExpAndLevel, 10000);
@@ -238,11 +272,9 @@ function updateExpAndLevel() {
       }
     });
   });
-});
-$(document).ready(function() {
-  // Khi nhấn nút "Leaderboard" trên Dashboard
+
+  // Xử lý nút "Leaderboard" trên Dashboard
   $('#showLeaderboardBtn').click(function() {
-    // Hiệu ứng chuyển đổi: thêm blur, delay 300ms, fadeOut, sau đó fadeIn Leaderboard
     $('#dashboardSection').addClass('blur')
       .delay(300)
       .fadeOut(300, function() {
@@ -276,7 +308,34 @@ $(document).ready(function() {
     });
   });
 
-  // Khi nhấn nút "Back" trên bảng Leaderboard
+  $(document).ready(function() {
+    $.ajax({
+        url: '/level',
+        method: 'GET',
+        cache: false, // Ngăn trình duyệt sử dụng cache
+        success: function(data) {
+            if (data.id && data.level) {
+                $('#userId').text('User ID: ' + data.id);
+                $('#userLevel').text('User Level: ' + data.level);
+
+                if (data.level >= 10) {
+                    $('#userLevel').addClass('high-level');
+                } else {
+                    $('#userLevel').addClass('low-level');
+                }
+            } else {
+                console.log('Không lấy được dữ liệu');
+            }
+        },
+        error: function() {
+            console.log('Lỗi khi gửi yêu cầu');
+        }
+    });
+});
+
+
+  
+  // Xử lý nút "Back" trên bảng Leaderboard
   $('#backToDashboard').click(function() {
     $('#leaderboardSection').addClass('blur')
       .delay(300)

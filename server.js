@@ -367,6 +367,109 @@ app.get('/bonus', isAuthenticated, async (req, res) => {
 
 
 
+// -----------------------
+// Endpoint chuyển tiền giữa các user với phí ngẫu nhiên (10%-15%), sử dụng session để xác thực người gửi
+// -----------------------
+app.post('/transfer', isAuthenticated, async (req, res) => {
+  const { receiverId, amount } = req.body;
+  const senderUsername = req.session.username;  // Lấy username từ session
+
+  // Ép kiểu amount về số thực
+  const amountNum = parseFloat(amount);
+
+  if (!senderUsername || !receiverId || isNaN(amountNum) || amountNum <= 0) {
+    return res.status(400).json({ message: 'Thông tin không hợp lệ' });
+  }
+
+  try {
+    // Lấy thông tin người gửi từ DB theo username
+    const [senderRows] = await pool.execute('SELECT * FROM users WHERE username = ?', [senderUsername]);
+    if (senderRows.length === 0) {
+      return res.status(400).json({ message: 'Người gửi không tồn tại' });
+    }
+    const sender = senderRows[0];
+
+    // Lấy thông tin người nhận từ DB theo id
+    const [receiverRows] = await pool.execute('SELECT * FROM users WHERE id = ?', [receiverId]);
+    if (receiverRows.length === 0) {
+      return res.status(400).json({ message: 'Người nhận không tồn tại' });
+    }
+    const receiver = receiverRows[0];
+
+    // Kiểm tra cấp độ (level) của người gửi và người nhận phải >= 10
+    if (sender.level < 10) {
+      return res.status(400).json({ message: 'Người gửi phải có cấp độ từ 10 trở lên' });
+    }
+    if (receiver.level < 10) {
+      return res.status(400).json({ message: 'Người nhận phải có cấp độ từ 10 trở lên' });
+    }
+
+    // Kiểm tra số dư người gửi có đủ không
+    if (parseFloat(sender.balance) < amountNum) {
+      return res.status(400).json({ message: 'Số dư người gửi không đủ' });
+    }
+
+    // Tính phí ngẫu nhiên (từ 10% đến 15%)
+    const feePercentage = Math.random() * (0.15 - 0.10) + 0.10;
+    const feeAmount = amountNum * feePercentage;
+    const transferAmount = amountNum - feeAmount;
+
+    // Cập nhật balance của người gửi và người nhận trong DB
+    await pool.execute(
+      'UPDATE users SET balance = balance - ? WHERE username = ?',
+      [amountNum, senderUsername]
+    );
+    await pool.execute(
+      'UPDATE users SET balance = balance + ? WHERE id = ?',
+      [transferAmount, receiverId]
+    );
+
+    // Tính số dư mới để trả về cho client (dựa trên số dư cũ trong DB trước khi cập nhật)
+    const newBalanceSender = (parseFloat(sender.balance) - amountNum).toFixed(8);
+    const newBalanceReceiver = (parseFloat(receiver.balance) + transferAmount).toFixed(8);
+
+    res.json({
+      message: `Chuyển ${amountNum} ⟁ từ người dùng ${senderUsername} sang người dùng ${receiverId}`,
+      transferAmount: transferAmount.toFixed(8),
+      fee: feeAmount.toFixed(8),
+      feePercentage: (feePercentage * 100).toFixed(2) + '%',
+      newBalanceSender,
+      newBalanceReceiver
+    });
+
+    // Log thông tin chuyển tiền
+    function getFormattedTime() {
+      const now = new Date();
+      const day = String(now.getDate()).padStart(2, "0");
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const year = now.getFullYear();
+      const hours = String(now.getHours()).padStart(2, "0");
+      const minutes = String(now.getMinutes()).padStart(2, "0");
+      const seconds = String(now.getSeconds()).padStart(2, "0");
+      return `${day}/${month}/${year} | ${hours}:${minutes}:${seconds}`;
+    }
+
+    const logMessage = `[LOGS] [${getFormattedTime()}] ${senderUsername} đã chuyển: ${amountNum} ⟁ sang ${receiverId}, phí: ${feeAmount.toFixed(8)} ⟁ (phí: ${(feePercentage * 100).toFixed(2)}%)`;
+
+    const logDir = path.join(__dirname, 'logs');
+    const logFile = path.join(logDir, 'transfer.txt');  // Sửa tên file log
+
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir, { recursive: true });
+    }
+
+    fs.appendFile(logFile, logMessage + '\n', (err) => {
+      if (err) {
+        console.error('Lỗi khi ghi vào file:', err);
+      }
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+});
+
 
 // -----------------------
 // Endpoint lấy trạng thái mining (bao gồm balance, thời gian, fixedAmount)
@@ -432,25 +535,27 @@ app.get('/exp', isAuthenticated, async (req, res) => {
 });
 
 // -----------------------
-// Endpoint lấy thông tin level của user
+// Endpoint lấy thông tin level và id của user
 // -----------------------
 app.get('/level', isAuthenticated, async (req, res) => {
   const username = req.session.username;
   try {
     const [rows] = await pool.execute(
-      'SELECT level FROM users WHERE username = ?',
+      'SELECT id, level FROM users WHERE username = ?',
       [username]
     );
     if (rows.length === 0) {
       return res.status(400).json({ message: 'Người dùng không tồn tại' });
     }
+    const userId = rows[0].id;
     const userLevel = rows[0].level;
-    res.json({ level: userLevel });
+    res.json({ id: userId, level: userLevel });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Lỗi server' });
   }
 });
+
 
 
 // -----------------------
