@@ -7,7 +7,8 @@ const bcrypt = require('bcrypt');
 const xss = require('xss');
 const app = express();
 const fs = require('fs');
-const SESSION_DURATION = 24 * 60 * 60 * 1000;
+const rateLimit = require("express-rate-limit");
+const SESSION_DURATION = 2 * 60 * 1000;
 const miningTimers = {};
 
 
@@ -33,6 +34,22 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0
 });
+
+// -----------------------
+// Rate limit
+// -----------------------
+
+// Giới hạn 5 request / 1 phút trên mỗi IP
+const loginLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 5, 
+  message: { message: "Bạn đã thử quá nhiều lần, vui lòng thử lại sau." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Áp dụng vào route login
+app.use("/login", loginLimiter);
 
 
 // -----------------------
@@ -172,6 +189,50 @@ function isAuthenticated(req, res, next) {
 }
 
 // -----------------------
+// Endpoint đổi mật khẩu
+// -----------------------
+app.post('/change-password', async (req, res) => {
+  if (!req.session.username) {
+    return res.status(401).json({ message: 'Bạn chưa đăng nhập' });
+  }
+  
+  const { oldPassword, newPassword, confirmNewPassword } = req.body;
+  const username = req.session.username;
+  
+  if (!oldPassword || !newPassword || !confirmNewPassword) {
+    return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin' });
+  }
+  
+  if (newPassword !== confirmNewPassword) {
+    return res.status(400).json({ message: 'Xác nhận mật khẩu mới không khớp' });
+  }
+  
+  try {
+    const [rows] = await pool.execute('SELECT password FROM users WHERE username = ?', [username]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Người dùng không tồn tại' });
+    }
+    
+    const user = rows[0];
+    const match = await bcrypt.compare(oldPassword, user.password);
+    
+    if (!match) {
+      return res.status(401).json({ message: 'Mật khẩu cũ không chính xác' });
+    }
+    
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    await pool.execute('UPDATE users SET password = ? WHERE username = ?', [hashedNewPassword, username]);
+    
+    res.json({ message: 'Đổi mật khẩu thành công' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+});
+
+
+// -----------------------
 // Hàm tính toán level dựa trên exp
 // -----------------------
 function calculateLevel(exp) {
@@ -210,7 +271,8 @@ app.post('/mine', isAuthenticated, async (req, res) => {
         message: 'Phiên đào đang hoạt động',
         timeout: timeRemaining,
         fixedAmount: user.mining_fixed_amount,
-        miningSpeedPerSecond: parseFloat((user.mining_fixed_amount / 30).toFixed(8))
+        miningSpeedPerSecond: parseFloat((Number(fixedAmount) || 0).toFixed(8))
+
       });
     }
 
@@ -310,13 +372,14 @@ app.post('/mine', isAuthenticated, async (req, res) => {
       } catch (err) {
         console.error('Lỗi trong mining interval:', err);
       }
-    }, 3600000);
+    }, 1900);
     // Trả về thông tin phiên đào cho client
     res.json({
       message: 'Bắt đầu đào coin',
       timeout: SESSION_DURATION,
       fixedAmount: fixedAmount,
-      miningSpeedPerSecond: parseFloat((fixedAmount / 30).toFixed(8))
+      miningSpeedPerSecond: parseFloat((Number(fixedAmount) || 0).toFixed(8))
+
     });
   } catch (err) {
     console.error(err);
@@ -505,7 +568,8 @@ app.get('/status', isAuthenticated, async (req, res) => {
       timeRemainingMs: timeRemainingMs,
       sessionDurationMs: sessionDurationMs,
       fixedAmount: fixedAmount,
-      miningSpeedPerSecond: parseFloat((fixedAmount / 30).toFixed(8))
+      miningSpeedPerSecond: parseFloat((Number(fixedAmount) || 0).toFixed(8))
+
     });
   } catch (err) {
     console.error('[ERROR] Lỗi server:', err);

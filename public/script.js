@@ -193,7 +193,7 @@ $(document).ready(function(){
         if(data.fixedAmount && data.fixedAmount > 0) {
           let speedPerSecond = data.fixedAmount;
           if(speedPerSecond > 0) {
-            $("#miningSpeed").text(formatNumber(speedPerSecond) + " coin/s");
+            $("#miningSpeed").text(formatNumber(speedPerSecond) + " coin");
           } else {
             $("#miningSpeed").text("Bạn chưa đào.");
           }
@@ -307,7 +307,32 @@ $(document).ready(function(){
       }
     });
   });
-
+  $(document).ready(function() {
+    $('#submitChangePassword').click(function() {
+        const oldPassword = $('#oldPassword').val();
+        const newPassword = $('#newPassword').val();
+        const confirmNewPassword = $('#confirmNewPassword').val();
+        
+        if (newPassword !== confirmNewPassword) {
+            alert('Mật khẩu mới và xác nhận mật khẩu không khớp!');
+            return;
+        }
+        
+        $.ajax({
+            url: '/change-password',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ oldPassword, newPassword, confirmNewPassword }),
+            success: function(response) {
+                alert(response.message);
+                $('#changePasswordModal').modal('hide');
+            },
+            error: function(xhr) {
+                alert(xhr.responseJSON.message);
+            }
+        });
+    });
+});
   $(document).ready(function() {
     $.ajax({
         url: '/level',
@@ -315,7 +340,7 @@ $(document).ready(function(){
         cache: false, // Ngăn trình duyệt sử dụng cache
         success: function(data) {
             if (data.id && data.level) {
-                $('#userId').text('User ID: ' + data.id);
+                $('#userId').text('Địa chỉ ví của bạn : ' + data.id);
                 $('#userLevel').text('User Level: ' + data.level);
 
                 if (data.level >= 10) {
