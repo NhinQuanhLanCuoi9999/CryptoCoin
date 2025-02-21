@@ -8,7 +8,7 @@ const xss = require('xss');
 const app = express();
 const fs = require('fs');
 const rateLimit = require("express-rate-limit");
-const SESSION_DURATION = 2 * 60 * 1000;
+const SESSION_DURATION = 24 * 60 * 60 * 1000;
 const miningTimers = {};
 
 
@@ -372,7 +372,7 @@ app.post('/mine', isAuthenticated, async (req, res) => {
       } catch (err) {
         console.error('Lỗi trong mining interval:', err);
       }
-    }, 1900);
+    }, 3600000);
     // Trả về thông tin phiên đào cho client
     res.json({
       message: 'Bắt đầu đào coin',
