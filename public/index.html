@@ -38,21 +38,25 @@ body {
 <div class="collapse navbar-collapse">
   <ul class="navbar-nav ml-auto">
     <li class="nav-item dropdown">
-      <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-        Menu
-      </a>
-      <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-        <a class="dropdown-item" id="infoBtn" href="#">Info</a>
-        <a class="dropdown-item" id="showLeaderboardBtn" href="#">Leaderboard</a>
-        <a class="dropdown-item" id="transferBtn" href="#">Chuyển tiền</a>
-        <a class="dropdown-item" id="changePasswordBtn" href="#" data-toggle="modal" data-target="#changePasswordModal">Đổi mật khẩu</a>
-    </div>
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item dropdown" id="menuItem">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Menu
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <a class="dropdown-item" id="infoBtn" href="#">Info</a>
+            <a class="dropdown-item" id="showLeaderboardBtn" href="#">Leaderboard</a>
+            <a class="dropdown-item" id="transferBtn" href="#">Chuyển tiền</a>
+            <a class="dropdown-item" id="changePasswordBtn" href="#" data-toggle="modal" data-target="#changePasswordModal">Đổi mật khẩu</a>
+          </div>
+        </li>
+        <li class="nav-item" id="nav-logout" style="display: none;">
+          <a class="nav-link" href="#" id="logoutBtn">Logout</a>
+        </li>
+      </ul>
     
-    </li>
-    <li class="nav-item" id="nav-logout" style="display: none;">
-      <a class="nav-link" href="#" id="logoutBtn">Logout</a>
-    </li>
-  </ul>
+      
+      
 </div>
 </nav>
 

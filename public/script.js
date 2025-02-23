@@ -55,10 +55,24 @@ $(document).ready(function(){
       }
     });
   });
-  
-  // Hàm lấy thông tin user
-  $(document).ready(function(){
-    $('#infoBtn').click(function(){
+  $(document).ready(function() {
+    // Hàm kiểm tra và cập nhật trạng thái menu
+    function checkMenuStatus() {
+      $.get('/info')
+        .done(function() {
+          $('#menuItem').show();
+        })
+        .fail(function() {
+          $('#menuItem').hide();
+        });
+    }
+
+    // Kiểm tra trạng thái menu ngay khi trang load và lặp lại mỗi 5 giây
+    checkMenuStatus();
+    setInterval(checkMenuStatus, 5000);
+
+    // Hàm lấy thông tin user khi click vào nút infoBtn
+    $('#infoBtn').click(function() {
       $.get('/info', function(data) {
         $('#infoId').text(data.id || 'N/A');
         $('#infoUsername').text(data.username || 'N/A');
@@ -72,7 +86,6 @@ $(document).ready(function(){
       });
     });
   });
-
   // Hàm cập nhật trạng thái (balance, mining, ...)
   function updateStatus() {
     $.ajax({
