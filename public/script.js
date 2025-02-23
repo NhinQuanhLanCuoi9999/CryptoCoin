@@ -40,6 +40,7 @@ $(document).ready(function(){
       method: 'POST',
       data: JSON.stringify({ receiverId, amount }),
       contentType: "application/json",
+      xhrFields: { withCredentials: true },
       success: function(response) {
         alert(
           `Chuyển tiền thành công!\nSố tiền nhận được: ${response.transferAmount} ⟁\nPhí: ${response.fee} ⟁ (${response.feePercentage})`
@@ -54,38 +55,46 @@ $(document).ready(function(){
       }
     });
   });
+  
+  // Hàm lấy thông tin user
+  $(document).ready(function(){
+    $('#infoBtn').click(function(){
+      $.get('/info', function(data) {
+        $('#infoId').text(data.id || 'N/A');
+        $('#infoUsername').text(data.username || 'N/A');
+        $('#infoLevel').text(data.level || 'N/A');
+        $('#infoBalance').text(data.balance || 'N/A');
+        $('#infoIP').text(data.ip || 'N/A');
+        $('#infoUserAgent').text(data.userAgent || 'N/A');
+        $('#infoModal').modal('show');
+      }).fail(function() {
+        alert('Không thể lấy thông tin user');
+      });
+    });
+  });
 
   // Hàm cập nhật trạng thái (balance, mining, ...)
   function updateStatus() {
     $.ajax({
       url: "/status",
       method: "GET",
+      xhrFields: { withCredentials: true },
       success: function (data) {
         $("#balanceDisplay").text(data.balance);
         let currentBalance = parseFloat(data.balance);
-        // Cập nhật số dư cũ để so sánh lần sau
         previousBalance = currentBalance;
         
         if (data.mining) {
           $("#miningStatus").text("Mining");
-
-          // Lấy tổng thời gian phiên và thời gian còn lại từ dữ liệu server
           let totalMs = data.sessionDurationMs;
           let timeRemaining = data.timeRemainingMs;
-
-          // Tính giờ, phút, giây từ timeRemaining
           let seconds = Math.floor((timeRemaining / 1000) % 60);
           let minutes = Math.floor((timeRemaining / (1000 * 60)) % 60);
           let hours = Math.floor(timeRemaining / (1000 * 60 * 60));
-
-          // Hiển thị thời gian dưới dạng "Xh Ym Zs"
           $("#timeRemaining").text(`${hours}h ${minutes}m ${seconds}s`);
           $("#mineBtn").prop("disabled", true);
-
-          // Tính phần trăm đã hoàn thành của phiên đào
           let percentage = ((totalMs - timeRemaining) / totalMs) * 100;
           updateProgressBar(percentage);
-
           $("#fixedAmountDisplay").text(formatNumber(data.fixedAmount));
           $("#miningSpeed").text(formatNumber(data.miningSpeedPerSecond));
         } else {
@@ -99,6 +108,7 @@ $(document).ready(function(){
       },
       error: function (err) {
         console.error("Error fetching status", err);
+        showAuth();
       }
     });
   }
@@ -119,7 +129,6 @@ $(document).ready(function(){
     return num.toFixed(8);
   }
 
-  // Gọi updateStatus ban đầu và sau đó mỗi 1 phút
   updateStatus();
   setInterval(updateStatus, 60000);
 
@@ -127,6 +136,7 @@ $(document).ready(function(){
   $.ajax({
     url: "/status",
     method: "GET",
+    xhrFields: { withCredentials: true },
     success: function(data) {
       showDashboard();
     },
@@ -145,6 +155,7 @@ $(document).ready(function(){
       method: "POST",
       contentType: "application/json",
       data: JSON.stringify({ username, password }),
+      xhrFields: { withCredentials: true },
       success: function(data) {
         alert("Login successful!");
         showDashboard();
@@ -188,6 +199,7 @@ $(document).ready(function(){
     $.ajax({
       url: "/mine",
       method: "POST",
+      xhrFields: { withCredentials: true },
       success: function(data) {
         updateStatus();
         if(data.fixedAmount && data.fixedAmount > 0) {
@@ -214,11 +226,13 @@ $(document).ready(function(){
     $.ajax({
       url: "/exp",
       method: "GET",
+      xhrFields: { withCredentials: true },
       success: function(data) {
         $("#expDisplay").text(formatNumber(data.exp));
         $.ajax({
           url: "/level",
           method: "GET",
+          xhrFields: { withCredentials: true },
           success: function(levelData) {
             console.log("Level data:", levelData);
             $("#levelDisplay").text(levelData.level);
@@ -235,6 +249,7 @@ $(document).ready(function(){
         $.ajax({
           url: "/bonus",
           method: "GET",
+          xhrFields: { withCredentials: true },
           success: function(bonusData) {
             console.log("Bonus data:", bonusData);
             $("#bonusExpDisplay").text(formatNumber(bonusData.bonusExp));
@@ -254,7 +269,6 @@ $(document).ready(function(){
     });
   }
 
-  // Cập nhật EXP và Level mỗi 10 giây
   setInterval(updateExpAndLevel, 10000);
 
   // Xử lý nút Logout
@@ -263,6 +277,7 @@ $(document).ready(function(){
     $.ajax({
       url: "/logout",
       method: "GET",
+      xhrFields: { withCredentials: true },
       success: function(data) {
         alert("Logged out successfully!");
         showAuth();
@@ -284,10 +299,10 @@ $(document).ready(function(){
         });
       });
     
-    // Lấy dữ liệu từ endpoint /leaderboard
     $.ajax({
       url: '/leaderboard',
       method: 'GET',
+      xhrFields: { withCredentials: true },
       dataType: 'json',
       success: function(data) {
         $('#leaderboardTableBody').empty();
@@ -307,60 +322,57 @@ $(document).ready(function(){
       }
     });
   });
-  $(document).ready(function() {
-    $('#submitChangePassword').click(function() {
-        const oldPassword = $('#oldPassword').val();
-        const newPassword = $('#newPassword').val();
-        const confirmNewPassword = $('#confirmNewPassword').val();
-        
-        if (newPassword !== confirmNewPassword) {
-            alert('Mật khẩu mới và xác nhận mật khẩu không khớp!');
-            return;
-        }
-        
-        $.ajax({
-            url: '/change-password',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ oldPassword, newPassword, confirmNewPassword }),
-            success: function(response) {
-                alert(response.message);
-                $('#changePasswordModal').modal('hide');
-            },
-            error: function(xhr) {
-                alert(xhr.responseJSON.message);
-            }
-        });
-    });
-});
-  $(document).ready(function() {
+
+  $('#submitChangePassword').click(function() {
+    const oldPassword = $('#oldPassword').val();
+    const newPassword = $('#newPassword').val();
+    const confirmNewPassword = $('#confirmNewPassword').val();
+    
+    if (newPassword !== confirmNewPassword) {
+      alert('Mật khẩu mới và xác nhận mật khẩu không khớp!');
+      return;
+    }
+    
     $.ajax({
-        url: '/level',
-        method: 'GET',
-        cache: false, // Ngăn trình duyệt sử dụng cache
-        success: function(data) {
-            if (data.id && data.level) {
-                $('#userId').text('Địa chỉ ví của bạn : ' + data.id);
-                $('#userLevel').text('User Level: ' + data.level);
-
-                if (data.level >= 10) {
-                    $('#userLevel').addClass('high-level');
-                } else {
-                    $('#userLevel').addClass('low-level');
-                }
-            } else {
-                console.log('Không lấy được dữ liệu');
-            }
-        },
-        error: function() {
-            console.log('Lỗi khi gửi yêu cầu');
-        }
+      url: '/change-password',
+      type: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify({ oldPassword, newPassword, confirmNewPassword }),
+      xhrFields: { withCredentials: true },
+      success: function(response) {
+        alert(response.message);
+        $('#changePasswordModal').modal('hide');
+      },
+      error: function(xhr) {
+        alert(xhr.responseJSON.message);
+      }
     });
-});
-
-
+  });
   
-  // Xử lý nút "Back" trên bảng Leaderboard
+  $.ajax({
+    url: '/level',
+    method: 'GET',
+    cache: false, // Ngăn trình duyệt sử dụng cache
+    xhrFields: { withCredentials: true },
+    success: function(data) {
+      if (data.id && data.level) {
+        $('#userId').text('Địa chỉ ví của bạn : ' + data.id);
+        $('#userLevel').text('User Level: ' + data.level);
+
+        if (data.level >= 10) {
+          $('#userLevel').addClass('high-level');
+        } else {
+          $('#userLevel').addClass('low-level');
+        }
+      } else {
+        console.log('Không lấy được dữ liệu');
+      }
+    },
+    error: function() {
+      console.log('Lỗi khi gửi yêu cầu');
+    }
+  });
+
   $('#backToDashboard').click(function() {
     $('#leaderboardSection').addClass('blur')
       .delay(300)

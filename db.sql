@@ -15,3 +15,14 @@ CREATE TABLE IF NOT EXISTS users (
     ip VARCHAR(255) NOT NULL,
     mining_fixed_amount DECIMAL(16,8) NULL
 );
+
+-- Tạo bảng guilds
+CREATE TABLE IF NOT EXISTS guilds (
+    id CHAR(36) PRIMARY KEY DEFAULT (UUID()),               -- ID của guild (UUID)
+    name VARCHAR(255) NOT NULL,                               -- Tên guild
+    leader_id CHAR(36) NOT NULL,                              -- ID của trưởng nhóm (liên kết với bảng users)
+    members JSON,                                            -- Mảng chứa các thành viên (dạng JSON)
+    mining_users JSON,                                       -- Mảng chứa các người đang đào (dạng JSON)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,           -- Thời gian tạo guild
+    FOREIGN KEY (leader_id) REFERENCES users(id) ON DELETE CASCADE -- Liên kết với bảng users
+);

@@ -1,4 +1,4 @@
-## Pyramid Coin
+## Pyramid Coin (Level cap : 2048)
 
 Đây là một ứng dụng mô phỏng khai thác tiền điện tử đầy đủ chức năng với:
 
@@ -30,3 +30,9 @@
 *   **Nhật ký Khai thác:** Ghi lại các sự kiện khai thác quan trọng vào tệp nhật ký để theo dõi và phân tích.
 *   **Giao diện Người dùng:** Sử dụng HTML, CSS và JavaScript để tạo giao diện người dùng tương tác.
 *   **Tương tác với Máy chủ:** Sử dụng AJAX để giao tiếp với máy chủ và cập nhật dữ liệu động.
+
+
+### Cách để chạy
+* Cài đặt NodeJS và các thư viện cần thiết bằng cách `npm install` sau khi cài NodeJS
+* Chạy MySQL và vào `server.js` để config MySQL
+* Chạy `node server.js` để bắt đầu server.

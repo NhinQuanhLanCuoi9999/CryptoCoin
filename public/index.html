@@ -42,6 +42,7 @@ body {
         Menu
       </a>
       <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+        <a class="dropdown-item" id="infoBtn" href="#">Info</a>
         <a class="dropdown-item" id="showLeaderboardBtn" href="#">Leaderboard</a>
         <a class="dropdown-item" id="transferBtn" href="#">Chuyển tiền</a>
         <a class="dropdown-item" id="changePasswordBtn" href="#" data-toggle="modal" data-target="#changePasswordModal">Đổi mật khẩu</a>
@@ -128,6 +129,31 @@ body {
     </div>
   </div>
 </div>
+<!-- Info Modal -->
+<div class="modal fade" id="infoModal" tabindex="-1" role="dialog" aria-labelledby="infoModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="infoModalLabel">User Info</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p><strong>ID:</strong> <span id="infoId">Loading...</span></p>
+        <p><strong>Username:</strong> <span id="infoUsername">Loading...</span></p>
+        <p><strong>Level:</strong> <span id="infoLevel">Loading...</span></p>
+        <p><strong>Balance:</strong> <span id="infoBalance">Loading...</span></p>
+        <p><strong>IP:</strong> <span id="infoIP">Loading...</span></p>
+        <p><strong>User Agent:</strong> <span id="infoUserAgent">Loading...</span></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <!-- Phần Leaderboard (ẩn mặc định) -->
 <div id="leaderboardSection" style="display: none;">
@@ -168,20 +194,21 @@ body {
               </button>
           </div>
           <div class="modal-body">
-              <form id="changePasswordForm">
-                  <div class="form-group">
-                      <label for="oldPassword">Mật khẩu cũ</label>
-                      <input type="password" class="form-control" id="oldPassword" required>
-                  </div>
-                  <div class="form-group">
-                      <label for="newPassword">Mật khẩu mới</label>
-                      <input type="password" class="form-control" id="newPassword" required>
-                  </div>
-                  <div class="form-group">
-                      <label for="confirmNewPassword">Xác nhận mật khẩu mới</label>
-                      <input type="password" class="form-control" id="confirmNewPassword" required>
-                  </div>
-              </form>
+            <form id="changePasswordForm">
+              <div class="form-group">
+                  <label for="oldPassword">Mật khẩu cũ</label>
+                  <input type="password" class="form-control" id="oldPassword" required minlength="6">
+              </div>
+              <div class="form-group">
+                  <label for="newPassword">Mật khẩu mới</label>
+                  <input type="password" class="form-control" id="newPassword" required minlength="6">
+              </div>
+              <div class="form-group">
+                  <label for="confirmNewPassword">Xác nhận mật khẩu mới</label>
+                  <input type="password" class="form-control" id="confirmNewPassword" required minlength="6">
+              </div>
+          </form>
+          
           </div>
           <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
